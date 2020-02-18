@@ -1,0 +1,67 @@
+#include "Manchester.h" // https://github.com/mchr3k/arduino-libs-manchester
+
+/*
+
+  Manchester Receiver example
+
+  In this example receiver will receive array of 10 bytes per transmittion
+
+  try different speeds using this constants, your maximum possible speed will
+  depend on various factors like transmitter type, distance, microcontroller speed, ...
+
+  MAN_300 0
+  MAN_600 1
+  MAN_1200 2
+  MAN_2400 3
+  MAN_4800 4
+  MAN_9600 5
+  MAN_19200 6
+  MAN_38400 7
+
+*/
+
+#define RX_PIN 2  // definimos el pin 2 para conectar al receptor
+#define LED_PIN 13  // alias del pin 13
+
+uint8_t estado = 0;
+
+#define BUFFER_SIZE 5 // cantidad de datos para la cadena
+uint8_t buffer[BUFFER_SIZE];//cadena de 5 datos
+
+void setup()
+{
+  pinMode(LED_PIN, OUTPUT); //pin 13 como salida
+  digitalWrite(LED_PIN, LOW); // apagamos el pin
+  Serial.begin(19200);  // velocidad de comunicación serial
+  man.setupReceive(RX_PIN, MAN_600);  // pin 2 y velocidad de 600 baudios para la comunicación rf
+  man.beginReceiveArray(BUFFER_SIZE, buffer); // los datos recibidos se almacenan en la variable buffer
+}
+
+void loop()
+{
+  if (man.receiveComplete())  // si se reciben datos
+  {
+    uint8_t receivedSize = 0; // variable para almacenar el primer valor de la cadena que es la cantidad de datos a recibir
+
+    receivedSize = buffer[0]; // almacenamos el primer valor
+    for (uint8_t i = 1; i < receivedSize; i++)  // conteo para mostrar los datos recibidos
+      Serial.write(buffer[i]);  // escribimos el dato en el puerto serial
+
+    Serial.println(); // terminamos la fila
+    if (buffer[1] == '1') //verificamos si el primer digito es el del código
+    {
+      if (buffer[2] == '2') //verificamos si el segundo digito es el del código
+      {
+        if (buffer[3] == '3') //verificamos si el tercer digito es el del código
+        {
+          if (buffer[4] == 'a') // si el cuarto digito es 'a' encendemos led
+          {
+            estado = ! estado;
+            digitalWrite(LED_PIN, estado);
+          }
+        }
+      }
+    }
+    man.beginReceiveArray(BUFFER_SIZE, buffer); // reiniciamos la comunicación
+  }
+}
